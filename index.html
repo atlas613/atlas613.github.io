@@ -748,6 +748,8 @@ path.land { --fk:0; } path.rel.r1 { --fk:1; } path.rel.r2 { --fk:2; } path.rel.r
 #welcome .wnote { font-size:14px; color:var(--muted); }
 #welcome .kx { position:absolute; top:8px; left:10px; border:0; background:none; font-size:20px; padding:4px 8px; cursor:pointer; color:var(--muted); }
 #bHelp { font-weight:800; min-width:36px; padding-inline:10px; } #bHelp .hm { display:none; } .ui2 .top.menu #bHelp .hm { display:inline; }
+.ui2 .top.menu #bHelp { font-weight:600; } .ui2 .top.menu #bHelp .q { display:none; }   /* 26.11 (Yonatan): in the phone menu only the words, without the "?" */
+#welcome .wnarrow { display:none; } @media (max-width:900px){ #welcome .wwide { display:none; } #welcome .wnarrow { display:inline; } }
 #tour { position:fixed; inset:0; z-index:78; }
 #tour[hidden] { display:none; }
 #tour.bare { background:rgba(30,20,14,.5); }
@@ -1123,7 +1125,7 @@ ul.seen { margin:0; padding-inline-start:22px; display:grid; gap:6px; font-size:
       <button class="btn quizb" id="bQuiz" hidden title="מבחן על הפרשה: שאלות על המקומות, האירועים ורש״י">מבחן</button>
       <button class="btn" id="bClass" aria-haspopup="dialog" title="לכיתה ולהדפסה: דפי עבודה, מצב הצגה ומבחן">לכיתה</button>
       <button class="btn" id="bShow" aria-pressed="false" title="מצב הצגה למקרן: טקסט גדול, מסך נקי, ומעבר בחצים או בשלט מצגות">הצגה</button>
-      <button class="btn" id="bHelp" aria-haspopup="dialog" aria-label="עזרה וסיור" title="עזרה: סיור קצר בכלים של האטלס">?<span class="hm"> עזרה וסיור</span></button>
+      <button class="btn" id="bHelp" aria-haspopup="dialog" aria-label="עזרה וסיור" title="עזרה: סיור קצר בכלים של האטלס"><span class="q">?</span><span class="hm">עזרה וסיור</span></button>
       <button class="btn ico" id="bFull" aria-pressed="false" aria-label="מסך מלא" title="מסך מלא" hidden><svg class="i-in" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="i-out" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg><span class="w">מסך מלא</span></button>
       <button class="btn story-only" id="bExit">✕ סיום<span class="w"> המסע</span></button>
     </div>
@@ -1151,7 +1153,7 @@ ul.seen { margin:0; padding-inline-start:22px; display:grid; gap:6px; font-size:
       <div id="welcome" hidden><div class="wbox" role="dialog" aria-modal="true" aria-labelledby="wh"><button class="kx" data-wx aria-label="סגירה">✕</button><p class="eyb">ברוכים הבאים</p><h2 id="wh">בדרכי אבותינו</h2>
         <p>אטלס לספר בראשית: כל אירוע במקום שלו על המפה, לפי סדר הפסוקים, עם רש״י.</p>
         <div class="wgo"><button class="btn enter" data-wgo="play">▶ יוצאים למסע</button><button class="btn hand" data-wgo="hand">מטיילים במפה לבד</button><button class="btn" data-wgo="tour">סיור של דקה</button></div>
-        <label><input type="checkbox" id="wNo"> לא להציג את החלון הזה שוב</label><p class="wnote">את הסיור אפשר לפתוח שוב בכל זמן בכפתור "?" שלמעלה.</p></div></div>
+        <label><input type="checkbox" id="wNo"> לא להציג את החלון הזה שוב</label><p class="wnote">את הסיור אפשר לפתוח שוב בכל זמן <span class="wwide">בכפתור "?" שלמעלה</span><span class="wnarrow">מהתפריט ⋯ שלמעלה, בכפתור "עזרה וסיור"</span>.</p></div></div>
       <div id="tour" hidden><div class="tring"></div><div class="tbub" role="dialog" aria-modal="true" aria-labelledby="tbT" aria-live="polite"><b id="tbT"></b><p id="tbP"></p><div class="tnav"><span class="n" id="tbN"></span><button class="btn" data-tg="-1">הקודם</button><button class="btn go" data-tg="1">הבא</button><button class="btn" data-tg="0">סיום</button></div></div></div>
       <div id="gloss" hidden role="dialog" aria-label="מילון לשון רש״י"></div>
       <div id="rulechip" hidden aria-live="polite"></div>
@@ -3394,7 +3396,7 @@ const TOUR=[
   [['#mapwrap .zoom'],'כלי המפה','התקרבות והתרחקות, חזרה לאירוע, מדידת מרחק בין שתי נקודות, השתקת הקולות ושכבות המפה.'],
   [['#legend'],'מי הולך','לכל אחד צבע משלו, והשם שלו הולך לידו על המפה. לוחצים על שם במקרא, ורואים את כל הדרך שלו.'],
   [['#bClass','#bMore'],'לכיתה','דפי עבודה להדפסה (גם בוורד), כרזה לכל פרשה ומפות לקיר, מצב הצגה למקרן, מבחנים, וגם התקנה בטלפון וקובץ גיבוי.','בתפריט הזה נמצא "לכיתה": דפי עבודה להדפסה (גם בוורד), כרזה לכל פרשה ומפות לקיר, מצב הצגה למקרן, מבחנים, וגם התקנה בטלפון וקובץ גיבוי.'],
-  [['#bHelp','#bMore'],'זהו','את הסיור הזה אפשר לפתוח שוב בכל זמן בכפתור הזה.','את הסיור הזה אפשר לפתוח שוב בכל זמן מהתפריט הזה, בכפתור "?".']];
+  [['#bHelp','#bMore'],'זהו','את הסיור הזה אפשר לפתוח שוב בכל זמן בכפתור הזה.','את הסיור הזה אפשר לפתוח שוב בכל זמן מהתפריט הזה, בכפתור "עזרה וסיור".']];
 let tourI=-1, tourBack=null;
 const tourEl=()=>{ for(let k=tourI;k>=0&&k<TOUR.length;){ for(const q of TOUR[k][0]){ const el=document.querySelector(q), r=el&&el.getBoundingClientRect(); if(r&&r.width>4&&r.height>4&&r.bottom>0&&r.top<innerHeight) return el; } return null; } return null; };
 function tourPlace(){ const t=$('#tour'); if(t.hidden) return; const el=tourEl(), ring=t.querySelector('.tring'), bub=t.querySelector('.tbub'), W=innerWidth, H=innerHeight;
@@ -3998,6 +4000,7 @@ if(kid()&&PR.list.length>1) setTimeout(()=>{ if(kid()&&KBOX.hidden) who(); },900
   const css=document.createElement('style');
   css.textContent='a#bContact { box-sizing:border-box; color:inherit; text-decoration:none; line-height:normal; }\n'+
     '@media (min-width:901px) and (max-width:1439px){ #bContact .w { display:none; } }\n'+   // a narrower screen: the envelope alone, its name in the tooltip
+    '.top.menu #bContact svg { display:none; }\n'+   // the phone menu: words only, like its other items (Yonatan, 26.11)
     '#app.kids #bContact, #app.present #bContact { display:none !important; }';
   document.head.appendChild(css);
   const a=document.createElement('a');
