@@ -42,6 +42,7 @@ q { quotes:"״" "״"; }
 .ui2 #tabs, #app.ui2.story #tabs { display:flex; grid-area:auto; flex:1 1 auto; min-width:0; background:none; border:0; padding:2px 4px; }
 .ui2 .modes { flex:none; flex-wrap:nowrap; gap:6px; }
 .ui2 .modes .btn { padding:4px 12px; }
+@media (min-width:901px) and (max-width:1000px){ .ui2 .modes { gap:4px; } .ui2 .modes .btn { padding:4px 8px; } }   /* 26.11: between 901 and 950 px the buttons ran off the left edge (up to 29 px) */
 .ui2 #bExit, .ui2 #bPanel, .ui2 #split, .ui2 #head { display:none !important; }
 #app.ui2:not(.playing) .story-only { display:none; }
 #rib { position:absolute; z-index:4; top:10px; left:50%; transform:translateX(-50%); width:max-content; max-width:min(940px, calc(100% - 120px));
@@ -3997,7 +3998,6 @@ if(kid()&&PR.list.length>1) setTimeout(()=>{ if(kid()&&KBOX.hidden) who(); },900
   const css=document.createElement('style');
   css.textContent='a#bContact { box-sizing:border-box; color:inherit; text-decoration:none; line-height:normal; }\n'+
     '@media (min-width:901px) and (max-width:1439px){ #bContact .w { display:none; } }\n'+   // a narrower screen: the envelope alone, its name in the tooltip
-    '@media (min-width:901px) and (max-width:999px){ #bContact { display:none; } }\n'+      // there the bar has no room left (under 901 it is in the "⋯" menu)
     '#app.kids #bContact, #app.present #bContact { display:none !important; }';
   document.head.appendChild(css);
   const a=document.createElement('a');
