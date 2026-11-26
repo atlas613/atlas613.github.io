@@ -3980,4 +3980,46 @@ if(kid()&&PR.list.length>1) setTimeout(()=>{ if(kid()&&KBOX.hidden) who(); },900
 })();
 
 </script>
+
+<script>
+// 26.11.2026 (Yonatan): "אפשרות ליצירת קשר איתי, להערות, הצעות, בקשות, שאלות". A button beside "?" opens his Google Form
+// "בדרכי אבותינו – יצירת קשר" in a new tab. The form is in his own Google account and its alerts go to his own mail:
+// no address of his is ever written on the site. "איפה באטלס" is filled in from the screen (the parasha, the event and its verse),
+// so he knows what a note is about. Not in kids mode (a form for grown-ups, like "לכיתה": children leave no name or mail there)
+// and not in the projector mode (a clean screen).
+// This file belongs to the thread "להוסיף לאתר כפתור יצירת קשר", the way kids.js belongs to the kids thread: build.py appends it
+// at the end of the page, and tools/mirror.sh takes it from the project folder and never writes it back.
+(function(){
+  const FORM='https://docs.google.com/forms/d/e/1FAIpQLSeL3rW3ni0mFyctajL8NOj-wxfWokAzRGD9vmZtrmUCrN5NuQ/viewform';
+  const WHERE='entry.2059476875';   // the question "איפה באטלס" ('' opens the form empty)
+  const modes=document.querySelector('.top .modes');
+  if(!FORM||!modes||document.getElementById('bContact')) return;
+  const css=document.createElement('style');
+  css.textContent='a#bContact { box-sizing:border-box; color:inherit; text-decoration:none; line-height:normal; }\n'+
+    '@media (min-width:901px) and (max-width:1439px){ #bContact .w { display:none; } }\n'+   // a narrower screen: the envelope alone, its name in the tooltip
+    '@media (min-width:901px) and (max-width:999px){ #bContact { display:none; } }\n'+      // there the bar has no room left (under 901 it is in the "⋯" menu)
+    '#app.kids #bContact, #app.present #bContact { display:none !important; }';
+  document.head.appendChild(css);
+  const a=document.createElement('a');
+  a.className='btn ico'; a.id='bContact'; a.href=FORM; a.target='_blank'; a.rel='noopener';
+  a.title='יצירת קשר: הערות, הצעות, בקשות ושאלות';
+  a.setAttribute('aria-label','יצירת קשר (נפתח בלשונית חדשה)');
+  a.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="m3.8 7.2 8.2 6.1 8.2-6.1"/></svg><span class="w">יצירת קשר</span>';
+  const help=document.getElementById('bHelp');
+  if(help&&help.parentNode===modes) help.after(a); else modes.appendChild(a);
+  // what is on the screen, in words: "פרשת לך לך · 5. ברית בין הבתרים (טו, ט)"; the headline itself when it is not one event
+  function where(){ let s='';
+    try{ const m=(D&&D.meta)||{}, h=document.querySelector('#hl h2'); s=h?h.textContent:'';
+      if(!themeOf&&!pathOf&&!stn&&!overview&&EV&&EV[idx]){ const e=EV[idx]; s=e.id+'. '+e.title+(e.key&&e.key.loc?' ('+e.key.loc+')':''); }
+      if(m.parasha&&!m.book&&s.indexOf('פרשת '+m.parasha)<0) s='פרשת '+m.parasha+' · '+s;   // (a stop says "פרשת ..." itself)
+      const y=document.getElementById('years'); if(y&&!y.hidden) s+=' · ציר השנים';
+    }catch(e){ const h=document.querySelector('#hl h2'); s=h?h.textContent:''; }
+    return s.replace(/\s+/g,' ').trim().slice(0,300); }
+  const link=()=>{ const w=WHERE&&where(); return w?FORM+'?usp=pp_url&'+WHERE+'='+encodeURIComponent(w):FORM; };
+  ['pointerdown','focus','contextmenu'].forEach(k=>a.addEventListener(k,()=>{ a.href=link(); }));   // also "open in a new tab" from the menu
+  a.addEventListener('click',()=>{ a.href=link();
+    try{ if(story&&playing){ heldAt=SLUG+':'+idx; pause(); } }catch(e){} });   // the journey waits, like it does for "לכיתה"
+})();
+
+</script>
 </body></html>
