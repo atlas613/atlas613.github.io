@@ -1874,7 +1874,7 @@ const wide=()=>overview||!!stn;          // the map shows all the routes of the 
 const hasStops=()=>!D.meta.book;
 const pos=()=>stn==='open'?-1:stn==='close'?N:idx;   // where the viewer stands: -1 the opening stop, N the closing one
 // the pace of the journey: how long it stays at a place and how slowly it moves on. Kept for the viewer's next visit.
-const TEMPI=[['נינוח',1.25],['רגיל',1],['מהיר',.7]]; let tempoI=1;
+const TEMPI=[['נינוח',.95],['רגיל',.75],['מהיר',.52]]; let tempoI=1;   // 26.11 (Yonatan): all three faster, by about a quarter
 try{ const t=localStorage.getItem('atlas.tempo'); if(t!==null&&+t>=0&&+t<TEMPI.length) tempoI=+t; }catch(e){}
 const tempo=()=>story?TEMPI[tempoI][1]:1;
 const sleep=(ms,id)=>new Promise(r=>setTimeout(()=>r(id===run),ms));
@@ -2465,12 +2465,12 @@ function runTool(x){
 const SNDMAP={
   bereshit:'V Bbs Bd Sbdy Bbs Bb Df Bs Df B Q Wt',
   noach:'Bh Bsbt Rt O Brd Bbs Bxb Bbzy W Tj Q Wf',
-  'lech-lecha':'Wfs Bb Csg Df Df Ab Csl Cs M Cbs Dm Dmt Nmc Bb Nc Wec C Dw Cb C Q',
-  vayera:'H Cb Wf Tc Wfb Ft Wu M Bfs Cb Cbs Dw De Ssgv Bb Q Mfa M Ms Dfa Cb',
-  'chayei-sarah':'Q T Q C Wkc Slv Cl Bck C Q Ss De',
+  'lech-lecha':'Wfs Bb Csg Df Df Ab Csl Csp M Cbs Dm Dmt Nmc Bb Nc Wec C Dw Cb C Q',
+  vayera:'H Cb Wf Tc Wfb Ft Wu M Bfs Cb Cpb Dw De Ssgv Bb Q Mfa M Ms Dfa Cb',
+  'chayei-sarah':'Q T Q C Wkc Slv Cpl Bck C Q Ss De',
   toldot:'Q Cb Cx Df Bbzy Svs Sbv Nc Cvb C Csx Q Qf Wf De',
   vayetze:'Df Q Nc Bbd Ssgv Cs Tc Cby Csg Wkf Mc Bnb Wf',
-  vayishlach:'Cfs Ngsq Abq Wm Chs Bsb Q B Bn Q Csg Cb Q Mk'};
+  vayishlach:'Cfs Ngsq Abq Wm Chs Bspb Q B Bn Q Csg Cb Q Mk'};
 const SNDLIGHT={night:'Nc',evening:'Bc',sunset:'Bc',dawn:'Bb',morning:'Bb',noon:'H',afternoon:'B'};
 function sceneOf(slug,id){ const m=SNDMAP[slug], c=m&&m.split(' ')[id-1]; if(c) return c;
   const lt=(((B.light||{})[slug]||{})[id]||[])[0]; return lt&&SNDLIGHT[lt.light]||'W'; }
@@ -2606,14 +2606,18 @@ function sndEngine(ctx){
     t(t){ const dst=at('t',rnd(-.5,.5),.7), d=rnd(3.5,6), lp=filt('lowpass',900), g=gain(0), n=16, cur=new Float32Array(n);
       for(let i=0;i<n;i++) cur[i]=.55*Math.exp(-i/(n*.45))*rnd(.55,1)*(i?1:0); lp.frequency.setValueAtTime(900,t); lp.frequency.exponentialRampToValueAtTime(180,t+d*.6);
       g.gain.setValueAtTime(0,t); g.gain.setValueCurveAtTime(cur,t+.01,d); chain(slice('brown',t,d+.1),lp,g,dst); return d+rnd(12,30); },
-    p(t){ voices=voices||ind(5,()=>{ const o=osc('sawtooth',rnd(95,165),ctx.currentTime,1e9), b1=filt('bandpass',500,6), b2=filt('bandpass',1500,8), e=gain(0), dst=at('p',rnd(-.9,.9),rnd(.65,.85));
-        chain(o,b1,e); chain(o,b2,gain(.6),e); chain(e,filt('lowpass',2000),dst); return {o,b1,b2,e,f:o.frequency.value,next:t+rnd(0,2)}; });
-      const V=[[300,2200],[400,1900],[700,1200],[500,900],[320,800]];
-      for(const k of voices){ if(k.next>=t+.4) continue; let s=Math.max(k.next,t); const n=3+Math.floor(Math.random()*7);
-        for(let i=0;i<n;i++){ const d=rnd(.12,.28), [f1,f2]=pick(V), f0=k.f*(1.08-.16*i/n)*rnd(.95,1.05);
-          k.o.frequency.setTargetAtTime(f0,s,.03); k.b1.frequency.setTargetAtTime(f1*rnd(.92,1.08),s,.02); k.b2.frequency.setTargetAtTime(f2*rnd(.92,1.08),s,.02);
-          k.e.gain.setTargetAtTime(.13*rnd(.6,1),s,.02); k.e.gain.setTargetAtTime(0,s+d,.025); s+=d+rnd(.02,.08); }
-        k.next=s+rnd(.4,1.6); } return .25; },
+    // 26.11 (Yonatan): the murmur of people was right, its sound was not (a buzz of robot syllables). Now: a crowd far off, under one another:
+    // a soft breathy bed that swells with the talk, and eight quiet voices with round vowels (a soft wave, wide formants, no hard edges),
+    // each saying a short phrase that falls at its end, then listening a while
+    p(t){ voices=voices||(()=>{ const bed=at('p',0,.85), n=loop('pink'), bp=filt('bandpass',480,.8), ng=gain(.035); chain(n,bp,filt('lowpass',900),ng,bed); lfo(.21,.012,ng.gain); lfo(.33,.008,ng.gain);
+        return ind(8,(_,i)=>{ const o=osc('triangle',rnd(96,138),ctx.currentTime,1e9), f1=filt('bandpass',500,2.2), f2=filt('bandpass',1100,2.6), e=gain(0), dst=at('p',rnd(-.85,.85),rnd(.72,.9));
+          chain(o,f1,e); chain(o,f2,gain(.45),e); chain(e,filt('lowpass',1300,.5),dst); return {o,f1,f2,e,f:o.frequency.value,next:t+rnd(0,4)}; }); })();
+      const V=[[320,900],[420,1000],[650,1100],[520,900],[380,800],[600,1300]];
+      for(const k of voices){ if(k.next>=t+.4) continue; let s=Math.max(k.next,t); const n=4+Math.floor(Math.random()*6), lift=rnd(1.02,1.08);
+        for(let i=0;i<n;i++){ const d=rnd(.15,.27), [f1,f2]=pick(V), f0=k.f*(lift-.12*i/n)*rnd(.97,1.03);
+          k.o.frequency.setTargetAtTime(f0,s,.06); k.f1.frequency.setTargetAtTime(f1*rnd(.94,1.06),s,.05); k.f2.frequency.setTargetAtTime(f2*rnd(.94,1.06),s,.05);
+          k.e.gain.setTargetAtTime(.07*rnd(.6,1)*(i===n-1?.6:1),s,.04); k.e.gain.setTargetAtTime(0,s+d,.06); s+=d+rnd(.03,.1); }
+        k.next=s+rnd(1.2,3.6); } return .25; },
     e(t){ const dst=at('e',rnd(-.8,.8),.85), f=rnd(2100,2600), n=Math.random()<.4?2:1;
       for(let i=0;i<n;i++){ const s=t+i*rnd(.85,1.1), d=rnd(.65,.95); voiced(dst,s,f,d,{type:'sine',curve:[1,1.18,1.22,1.15,.95,.78],vib:.015,vibf:22,F:[[f*1.1,.8,1],[f*2.2,3,.15]],amp:.14,a:.03,r:.3}); }
       return rnd(10,24); },
@@ -2645,7 +2649,7 @@ function sndEngine(ctx){
       const e=gain(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(.25,t+d*.4); e.gain.linearRampToValueAtTime(0,t+d);
       chain(o,filt('bandpass',f*3,2),filt('lowpass',2400),e,dst); return d+rnd(4,9); }};
   // the levels of the voices in a scene (before the bed's own level)
-  const LV={c:.56,o:.71,b:.79,d:.56,r:.8,s:3.16,g:.63,k:.71,l:1,f:1,m:1.26,h:.45,j:.79,t:.79,p:1.1,e:1,n:.45,z:.71,a:.35,v:.9,q:1.6,y:1};   // measured (A-weighted) and evened out
+  const LV={c:.56,o:.71,b:.79,d:.56,r:.8,s:3.16,g:.63,k:.71,l:1,f:1,m:1.26,h:.45,j:.79,t:.79,p:.5,e:1,n:.45,z:.71,a:.35,v:.9,q:1.6,y:1};   // measured (A-weighted) and evened out
   const BEDL={V:.3,B:.4,C:.36,T:.3,H:.28,W:.25,D:.23,M:.24,N:.22,Q:.22,R:.57,A:.55,S:.53,O:1.26,F:.75}, BEDK={C:'B',T:'B',H:'B'}, LAYERS='xuw';
   let curLow=false; const next={}, on={};
   return { out,
