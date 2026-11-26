@@ -2462,15 +2462,17 @@ function runTool(x){
 //   m many steps  h hammering wood  j bricks  t thunder far away  p people  e bird of prey  n stones  w trickle  z cicadas  x small fire  u far fire
 //   a donkey's hooves  v a bucket at a well  q frogs by the water  y a bee (25.11; the owl o is no longer used: at night it sounded eerie)
 // A move between stations is marked: a soft gust when the place changes, the rustle of a page when it stays.
+// 26.11 (Yonatan): no voices of people ('p' is kept in the engine, unused): made by synthesis they sounded like robots, wind, then aliens.
+// A town is heard by its steps (f), its donkeys (a), its well (v) and its birds instead
 const SNDMAP={
   bereshit:'V Bbs Bd Sbdy Bbs Bb Df Bs Df B Q Wt',
-  noach:'Bh Bsbt Rt O Brd Bbs Bxb Bbzy W Tj Q Wf',
-  'lech-lecha':'Wfs Bb Csg Df Df Ab Csl Csp M Cbs Dm Dmt Nmc Bb Nc Wec C Dw Cb C Q',
-  vayera:'H Cb Wf Tc Wfb Ft Wu M Bfs Cb Cpb Dw De Ssgv Bb Q Mfa M Ms Dfa Cb',
-  'chayei-sarah':'Q T Q C Wkc Slv Cpl Bck C Q Ss De',
+  noach:'Bh Bsbt Rt O Brd Bbs Bxb Bbzy W Tjf Q Wf',
+  'lech-lecha':'Wfs Bb Csg Df Df Ab Csl Cs M Cbs Dm Dmt Nmc Bb Nc Wec C Dw Cb C Q',
+  vayera:'H Cb Wf Tc Wfb Ft Wu M Bfs Cb Cbf Dw De Ssgv Bb Q Mfa M Ms Dfa Cb',
+  'chayei-sarah':'Q Tfa Q C Wkc Slv Cvl Bck C Q Ss De',
   toldot:'Q Cb Cx Df Bbzy Svs Sbv Nc Cvb C Csx Q Qf Wf De',
   vayetze:'Df Q Nc Bbd Ssgv Cs Tc Cby Csg Wkf Mc Bnb Wf',
-  vayishlach:'Cfs Ngsq Abq Wm Chs Bpb Q B Bn Q Csg Cb Q Mk'};
+  vayishlach:'Cfs Ngsq Abq Wm Chs Bfab Q B Bn Q Csg Cb Q Mk'};
 const SNDLIGHT={night:'Nc',evening:'Bc',sunset:'Bc',dawn:'Bb',morning:'Bb',noon:'H',afternoon:'B'};
 function sceneOf(slug,id){ const m=SNDMAP[slug], c=m&&m.split(' ')[id-1]; if(c) return c;
   const lt=(((B.light||{})[slug]||{})[id]||[])[0]; return lt&&SNDLIGHT[lt.light]||'W'; }
@@ -2606,18 +2608,23 @@ function sndEngine(ctx){
     t(t){ const dst=at('t',rnd(-.5,.5),.7), d=rnd(3.5,6), lp=filt('lowpass',900), g=gain(0), n=16, cur=new Float32Array(n);
       for(let i=0;i<n;i++) cur[i]=.55*Math.exp(-i/(n*.45))*rnd(.55,1)*(i?1:0); lp.frequency.setValueAtTime(900,t); lp.frequency.exponentialRampToValueAtTime(180,t+d*.6);
       g.gain.setValueAtTime(0,t); g.gain.setValueCurveAtTime(cur,t+.01,d); chain(slice('brown',t,d+.1),lp,g,dst); return d+rnd(12,30); },
-    // 26.11 (Yonatan): the murmur of people was right, its sound was not (a buzz of robot syllables). Now: a crowd far off, under one another:
-    // a soft breathy bed that swells with the talk, and eight quiet voices with round vowels (a soft wave, wide formants, no hard edges),
-    // each saying a short phrase that falls at its end, then listening a while
-    p(t){ voices=voices||(()=>{ const bed=at('p',0,.85), n=loop('pink'), bp=filt('bandpass',480,.8), ng=gain(.05); chain(n,bp,filt('lowpass',900),ng,bed); lfo(.21,.012,ng.gain); lfo(.33,.008,ng.gain);
-        return ind(8,(_,i)=>{ const o=osc('triangle',rnd(96,138),ctx.currentTime,1e9), f1=filt('bandpass',500,2.2), f2=filt('bandpass',1100,2.6), e=gain(0), dst=at('p',rnd(-.85,.85),rnd(.45,.7));
-          chain(o,f1,e); chain(o,f2,gain(.45),e); chain(e,filt('lowpass',1300,.5),dst); return {o,f1,f2,e,f:o.frequency.value,next:t+rnd(0,4)}; }); })();
-      const V=[[320,900],[420,1000],[650,1100],[520,900],[380,800],[600,1300]];
-      for(const k of voices){ if(k.next>=t+.4) continue; let s=Math.max(k.next,t); const n=4+Math.floor(Math.random()*6), lift=rnd(1.02,1.08);
-        for(let i=0;i<n;i++){ const d=rnd(.15,.27), [f1,f2]=pick(V), f0=k.f*(lift-.12*i/n)*rnd(.97,1.03);
-          k.o.frequency.setTargetAtTime(f0,s,.06); k.f1.frequency.setTargetAtTime(f1*rnd(.94,1.06),s,.05); k.f2.frequency.setTargetAtTime(f2*rnd(.94,1.06),s,.05);
-          k.e.gain.setTargetAtTime(.07*rnd(.6,1)*(i===n-1?.6:1),s,.04); k.e.gain.setTargetAtTime(0,s+d,.06); s+=d+rnd(.03,.1); }
-        k.next=s+rnd(.5,1.8); } return .25; },
+    // 26.11 (Yonatan): the murmur of people was right, its sound was not: first a buzz of robot syllables, then (soft waves over a breathy bed) "wind".
+    // Now voices as a voice is made: a throat wave whose overtones fall off as in speech, three formants that move between real vowels
+    // (a, e, i, o, u), consonants at the start of syllables (a short hiss or click), syllables joined into words, a phrase that rises and falls,
+    // and ten men talking at once at different distances, so that no one voice is heard alone
+    p(t){ voices=voices||(()=>{ const nh=40, re=new Float32Array(nh+1), im=new Float32Array(nh+1); for(let n=1;n<=nh;n++) im[n]=Math.pow(n,-1.35); const wave=ctx.createPeriodicWave(re,im);
+        return ind(10,()=>{ const f=rnd(92,145), o=ctx.createOscillator(); o.setPeriodicWave(wave); o.frequency.value=f; o.start(); const vib=lfo(rnd(4.5,6),f*.012,o.frequency);
+          const f1=filt('bandpass',500,5), f2=filt('bandpass',1500,8), f3=filt('bandpass',2500,10), e=gain(0), lp=filt('lowpass',3400,.6), dst=at('p',rnd(-.9,.9),rnd(.35,.75));
+          chain(o,f1,e); chain(o,f2,gain(.55),e); chain(o,f3,gain(.2),e); chain(e,lp,dst); return {o,f1,f2,f3,e,dst,f,next:t+rnd(0,2.5),srcs:[vib]}; }); })();
+      const V=[[730,1090,2440],[530,1840,2480],[300,2200,2950],[570,850,2410],[320,870,2240],[660,1700,2450]];
+      for(const k of voices){ if(k.next>=t+.4) continue; let s=Math.max(k.next,t); const words=2+Math.floor(Math.random()*4), amp=rnd(.05,.085);
+        let syl=0, nsyl=0; const tot=[]; for(let w=0;w<words;w++){ tot.push(1+Math.floor(Math.random()*3)); nsyl+=tot[w]; }
+        for(let w=0;w<words;w++){ for(let q=0;q<tot[w];q++,syl++){ const d=rnd(.11,.2), v=pick(V), stress=q===tot[w]-1&&Math.random()<.6?1.08:1;
+            const f0=k.f*(1.14-.24*syl/nsyl)*stress*rnd(.98,1.02);
+            k.o.frequency.setTargetAtTime(f0,s,.04); k.f1.frequency.setTargetAtTime(v[0]*rnd(.93,1.07),s,.03); k.f2.frequency.setTargetAtTime(v[1]*rnd(.93,1.07),s,.03); k.f3.frequency.setTargetAtTime(v[2],s,.03);
+            if(Math.random()<.55){ const b=gain(0); perc(b,s-.03,amp*rnd(.25,.5),.004,.018); chain(slice('white',s-.03,.07),filt('bandpass',rnd(2200,5200),1.4),b,k.dst); }   // a consonant
+            k.e.gain.setTargetAtTime(amp*stress*(syl===nsyl-1?.7:1),s,.022); k.e.gain.setTargetAtTime(q<tot[w]-1?amp*.3:0,s+d,.035); s+=d+(q<tot[w]-1?.02:rnd(.06,.16)); } }
+        k.next=s+rnd(.3,1.4); } return .25; },
     e(t){ const dst=at('e',rnd(-.8,.8),.85), f=rnd(2100,2600), n=Math.random()<.4?2:1;
       for(let i=0;i<n;i++){ const s=t+i*rnd(.85,1.1), d=rnd(.65,.95); voiced(dst,s,f,d,{type:'sine',curve:[1,1.18,1.22,1.15,.95,.78],vib:.015,vibf:22,F:[[f*1.1,.8,1],[f*2.2,3,.15]],amp:.14,a:.03,r:.3}); }
       return rnd(10,24); },
@@ -2649,12 +2656,12 @@ function sndEngine(ctx){
       const e=gain(0); e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(.25,t+d*.4); e.gain.linearRampToValueAtTime(0,t+d);
       chain(o,filt('bandpass',f*3,2),filt('lowpass',2400),e,dst); return d+rnd(4,9); }};
   // the levels of the voices in a scene (before the bed's own level)
-  const LV={c:.56,o:.71,b:.79,d:.56,r:.8,s:3.16,g:.63,k:.71,l:1,f:1,m:1.26,h:.45,j:.79,t:.79,p:1,e:1,n:.45,z:.71,a:.35,v:.9,q:1.6,y:1};   // measured (A-weighted) and evened out
+  const LV={c:.56,o:.71,b:.79,d:.56,r:.8,s:3.16,g:.63,k:.71,l:1,f:1,m:1.26,h:.45,j:.79,t:.79,p:1.3,e:1,n:.45,z:.71,a:.35,v:.9,q:1.6,y:1};   // measured (A-weighted) and evened out
   const BEDL={V:.3,B:.4,C:.36,T:.3,H:.28,W:.25,D:.23,M:.24,N:.22,Q:.22,R:.57,A:.55,S:.53,O:1.26,F:.75}, BEDK={C:'B',T:'B',H:'B'}, LAYERS='xuw';
   let curLow=false; const next={}, on={};
   return { out,
     scene(code,t){ t=t==null?ctx.currentTime:t;   // the bed _ is none at all (to hear a voice alone)
-      const bed=code[0], acc=code.slice(1)+(bed==='T'?'p':'')+(bed==='H'?'z':''), want={};
+      const bed=code[0], acc=code.slice(1)+(bed==='H'?'z':''), want={};
       if(bed!=='_') want[BEDK[bed]||bed]=BEDL[bed]||.4; for(const ch of acc) if(LAYERS.includes(ch)) want[ch]=ch==='u'?.57:ch==='w'?.55:.39;
       for(const k of new Set([...Object.keys(LAYER),...Object.keys(want)])){ const L=layer(k), v=want[k]||0; L.want=v; L.g.gain.setTargetAtTime(v,t,1.1); if(v) L.quiet=0; else if(!L.quiet) L.quiet=t; }
       for(const k in ACT){ const v=acc.includes(k); if(v&&!on[k]) next[k]=0; on[k]=v; bus(k).gain.setTargetAtTime(v?LV[k]:0,t,v?.6:1); }
