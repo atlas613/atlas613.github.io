@@ -43,6 +43,18 @@ q { quotes:"״" "״"; }
 .ui2 .modes { flex:none; flex-wrap:nowrap; gap:6px; }
 .ui2 .modes .btn { padding:4px 12px; }
 @media (min-width:901px) and (max-width:1000px){ .ui2 .modes { gap:4px; } .ui2 .modes .btn { padding:4px 8px; } }   /* 26.11: between 901 and 950 px the buttons ran off the left edge (up to 29 px) */
+/* 26.11 (Yonatan): on a computer the four main buttons stay big and side by side: "ילדים" first (it changes the whole atlas), then in the
+   order of use "מסע" (its own buttons come right after it while it plays), "מבחן", "לכיתה". The others are smaller, and "אא" went down
+   to the map's tools. ("ילדים" and "מסע" sit in .top itself, right before .modes.) */
+@media (min-width:901px){
+  .ui2 .modes { align-items:center; }
+  .ui2 .modes > .btn { order:6; }
+  .ui2 .modes > #bPlay { order:1; } .ui2 .modes > #bInfo, .ui2 .modes > #bTempo, .ui2 .modes > #bExit { order:2; }
+  .ui2 .modes > #bQuiz { order:3; } .ui2 .modes > #bClass { order:4; }
+  .ui2 .modes > .btn:not(#bPlay):not(#bQuiz):not(#bClass):not(#bKids) { box-sizing:border-box; min-height:28px; font-size:13px; padding:3px 9px; box-shadow:0 1px 0 var(--line); }
+  .ui2 .modes > .btn.ico:not(#bKids) svg { width:15px; height:15px; }
+  .zoom #bText { justify-content:center; gap:0; } .zoom #bText b { position:absolute; margin:0; transform:translate(-14px,-12px); font-size:11px; }
+}
 .ui2 #bExit, .ui2 #bPanel, .ui2 #split, .ui2 #head { display:none !important; }
 #app.ui2:not(.playing) .story-only { display:none; }
 #rib { position:absolute; z-index:4; top:10px; left:50%; transform:translateX(-50%); width:max-content; max-width:min(940px, calc(100% - 120px));
@@ -2104,8 +2116,8 @@ function drawRoutes(i,id,cams){               // stretch the line(s) of event i 
   const els=$$(`.route[data-ev="${EV[i].id}"]`); if(!els.length||reduce) return Promise.resolve();
   const trav=$('#trav'), wkr=$('#wkr'), total=els.reduce((a,el)=>a+el.getTotalLength(),0), tok=++travTok;
   return els.reduce((p,el,n)=>p.then(()=>cams&&cams[n]&&n?fly(cams[n],1300*tempo()):null).then(()=>new Promise(res=>{
-    const len=el.getTotalLength(), dur=(D.meta.book?Math.max(260,7000*len/total):Math.max(cams?2800:1500,Math.min(4200,900+len*7)))*tempo(), t0=performance.now();   // a short way seen from close by walks long enough to follow
-    const who=(el.getAttribute('class').match(/w-(\w+)/)||[])[1], kind=walkKind(who,EV[i]), last=n===els.length-1;
+    const len=el.getTotalLength(), dur=(D.meta.book?Math.max(700,12000*len/total):Math.max(cams?2800:1500,Math.min(4200,900+len*7)))*tempo(), t0=performance.now();   // a short way seen from close by walks long enough to follow
+    const who=(el.getAttribute('class').match(/w-(\w+)/)||[])[1], kind=D.meta.book?null:walkKind(who,EV[i]), last=n===els.length-1;   // the whole book: a dot on each line, no walkers (Yonatan, 26.11)
     const leg=$(`#legL li[data-w="${who}"]`); if(leg) leg.classList.add('moving');
     el.classList.remove('now'); el.style.opacity=1; trav.style.display=''; const col=getComputedStyle(el).stroke;
     trav.querySelector('.td').setAttribute('fill',col); trav.querySelector('.mk').style.display=kind?'none':'';
@@ -2932,7 +2944,7 @@ async function goStop(kind,opt){ opt=opt||{}; clearPath(); unOffer(); const id=+
   return id===run; }
 // ---------------------------------------------------------------- journey mode
 const words=s=>s.trim().split(/\s+/).length;
-function dwellMs(e){ let ms=Math.max(4200,1800+300*(words(e.title)+words(e.key.text))+140*words(SCL[e.id]||'')); if(explain) ms+=380*words(e.summary); return ms*tempo(); }   // time to read what is on screen
+function dwellMs(e){ let ms=Math.max(4200,1800+300*(words(e.title)+words(e.key.text))+140*words(SCL[e.id]||'')); if(explain) ms+=380*words(e.summary); if(D.meta.book) ms*=1.3; return ms*tempo(); }   // the whole book: a whole parasha at each stop, so a longer stay (Yonatan, 26.11)   // time to read what is on screen
 function resetProg(){ const b=$('#prog i'); b.style.transition='none'; b.style.transform='scaleX(0)'; }
 function dwell(ms,id){ const b=$('#prog i'); resetProg(); void b.offsetWidth; b.style.transition=`transform ${ms}ms linear`; b.style.transform='scaleX(1)'; return sleep(ms,id); }
 async function play(mode){ playing=true; $('#post').hidden=false; unOffer(); sync();
@@ -3036,9 +3048,15 @@ function applyTS(){ const t=present?PS[tsI]:TS[tsI]; app.style.setProperty('--ts
   measure(BASEL); measure(LAYL); declutter(); if(yrs) renderYears();
   if(UI2){ fitRib(); if(story) relayout(); } }
 $('#bText').onclick=()=>{ tsI=(tsI+1)%TS.length; try{ localStorage.setItem('atlas.ts',String(TS[tsI])); }catch(e){} applyTS(); };
-function setPresent(on){ present=on; app.classList.toggle('present',on); $('#bShow').setAttribute('aria-pressed',String(on));
+function setPresent(on){ present=on; app.classList.toggle('present',on); if(typeof placeText==='function') placeText(); $('#bShow').setAttribute('aria-pressed',String(on));
   if(on&&fsOK&&!fsEl()){ fsAuto=false; setFull(true); } applyTS(); }
 $('#bShow').onclick=()=>setPresent(!present);
+// 26.11 (Yonatan): "אא" is not needed often, so on a computer it sits with the map's tools at the bottom and not in the top bar.
+// On a phone it stays in the "⋯" menu, and in the projector mode (no map tools there) in the bar.
+function placeText(){ const b=$('#bText'), z=$('#mapwrap .zoom'), m=$('.top .modes'); if(!b||!z||!m) return;
+  const desk=UI2&&matchMedia('(min-width:901px)').matches&&!present;
+  if(desk){ if(b.parentNode!==z) z.appendChild(b); } else if(b.parentNode!==m) m.insertBefore(b,$('#bLayersM')); }
+placeText(); try{ matchMedia('(min-width:901px)').addEventListener('change',placeText); }catch(e){}
 // ---------------------------------------------------------------- what happened at a place (a click on the map)
 const BYPLACE={};
 function hidePop(){ $('#placepop').hidden=true; $('#worldchip').hidden=!worldOn; }
@@ -3393,7 +3411,7 @@ const TOUR=[
   [['#ptitle'],'כרטיס האירוע','מה קרה כאן, עם הפסוק. בתחתית הכרטיס יש חצים לאירוע הקודם ולאירוע הבא.'],
   [['#rail [data-dk="r"]','#ptabs [data-dk="r"]','#rail','#ptabs'],'רש״י ועוד','כאן נפתחים רש״י, הדרך, המחלוקות ועוד. ברש״י, מילה עם קו מנוקד מתחתיה היא מילה קשה: לוחצים עליה ומקבלים את הפירוש.',null,'בכל תחנה יש לשוניות: הפסוקים, רש״י, הדרך, המחלוקות ועוד. ברש״י, מילה עם קו מנוקד מתחתיה היא מילה קשה: לוחצים עליה ומקבלים את הפירוש.'],
   [['.place.cur','#map'],'מקום על המפה','לוחצים על שם של מקום, ונפתח חלון: איך הוא נקרא בתרגום אונקלוס, איפה הוא היום ומה עוד קרה בו.'],
-  [['#mapwrap .zoom'],'כלי המפה','התקרבות והתרחקות, חזרה לאירוע, מדידת מרחק בין שתי נקודות, השתקת הקולות ושכבות המפה.'],
+  [['#mapwrap .zoom'],'כלי המפה','התקרבות והתרחקות, חזרה לאירוע, מדידת מרחק בין שתי נקודות, השתקת הקולות, שכבות המפה וגודל הטקסט.'],
   [['#legend'],'מי הולך','לכל אחד צבע משלו, והשם שלו הולך לידו על המפה. לוחצים על שם במקרא, ורואים את כל הדרך שלו.'],
   [['#bClass','#bMore'],'לכיתה','דפי עבודה להדפסה (גם בוורד), כרזה לכל פרשה ומפות לקיר, מצב הצגה למקרן, מבחנים, וגם התקנה בטלפון וקובץ גיבוי.','בתפריט הזה נמצא "לכיתה": דפי עבודה להדפסה (גם בוורד), כרזה לכל פרשה ומפות לקיר, מצב הצגה למקרן, מבחנים, וגם התקנה בטלפון וקובץ גיבוי.'],
   [['#bHelp','#bMore'],'זהו','את הסיור הזה אפשר לפתוח שוב בכל זמן בכפתור הזה.','את הסיור הזה אפשר לפתוח שוב בכל זמן מהתפריט הזה, בכפתור "עזרה וסיור".']];
